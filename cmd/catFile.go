@@ -6,7 +6,7 @@ package cmd
 import (
 	"compress/zlib"
 	"fmt"
-	"git/pkg"
+	"github.com/aokabi/gogit/pkg"
 	"os"
 
 	"github.com/spf13/cobra"
