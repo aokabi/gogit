@@ -1,12 +1,15 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"compress/zlib"
 	"fmt"
+	"io"
+	"os"
 
+	"github.com/aokabi/gogit/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -21,8 +24,38 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("hashObject called")
-		fmt.Println("filename: ", args[0])
+		f, err := os.Open(args[0])
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		content, err := io.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+
+		// print hash
+		obj := pkg.NewBlob(content)
+		hash := obj.Hash()
+		fmt.Println(hash)
+
+		// save object
+		if _, err := os.Stat(fmt.Sprintf(".git/objects/%s", hash[:2])); os.IsNotExist(err) {
+			os.Mkdir(fmt.Sprintf(".git/objects/%s", hash[:2]), 0755)	
+		}
+		wf, err := os.Create(fmt.Sprintf(".git/objects/%s/%s", hash[:2], hash[2:]))
+		if err != nil {
+			panic(err)
+		}
+		defer wf.Close()
+		
+		zipWriter := zlib.NewWriter(wf)
+		defer zipWriter.Close()
+
+		obj.Store(zipWriter)
+
+
 	},
 	DisableFlagsInUseLine: true,
 }

@@ -1,6 +1,9 @@
 package pkg
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -14,6 +17,16 @@ type header struct {
 type gitObj struct {
 	header
 	content []byte
+}
+
+func NewBlob(content []byte) *gitObj {
+	return &gitObj{
+		header: header{
+			objType: "blob",
+			size:    len(content),
+		},
+		content: content,
+	}
 }
 
 func (o *gitObj) GetContent() []byte {
@@ -45,4 +58,17 @@ func Parse(r io.Reader) (*gitObj, error) {
 		},
 		content: []byte(content),
 	}, nil
+}
+
+// ハッシュはヘッダ込みで計算する
+func (o *gitObj) Hash() string {
+	store := fmt.Sprintf("%s %d\x00%s", o.objType, o.size, o.content)
+	hash := sha1.New()
+	hash.Write([]byte(store))
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+func (o *gitObj) Store(w io.Writer) {
+	store := fmt.Sprintf("%s %d\x00%s", o.objType, o.size, o.content)
+	w.Write([]byte(store))
 }
