@@ -4,10 +4,10 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"compress/zlib"
 	"fmt"
+	"strings"
+
 	"github.com/aokabi/gogit/pkg"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -23,27 +23,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		prefix := printFlag[:2]
-		sufix := printFlag[2:]
-
-		path := fmt.Sprintf(".git/objects/%s/%s", prefix, sufix)
-		f, err := os.Open(path)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
+		f := pkg.ReadObjectFile(printFlag)
 
 		// decompress the file
-		r, err := zlib.NewReader(f)
+		r, err := pkg.Decompress(f)
 		if err != nil {
 			panic(err)
 		}
 		defer r.Close()
+
 		gitObj, err := pkg.Parse(r)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(string(gitObj.GetContent()))
+		fmt.Println(printString(gitObj))
 	},
 }
 
@@ -63,4 +56,21 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	catFileCmd.PersistentFlags().StringVarP(&printFlag, "p", "p", "", "print file")
+}
+
+func printString(o *pkg.GitObj) string {
+	switch o.GetObjType() {
+	case "blob":
+		return o.DecodeContent2Blob()
+	case "tree":
+		tree := pkg.DecodeContent2Tree(o)
+		entries := make([]string, 0)
+		for e := range tree.Entries() {
+			entries = append(entries, fmt.Sprintf("%s %s %s    %s", e.GetPerm(), e.GetObjType(), e.GetHash(), e.GetFilename()))
+		}
+
+		return strings.Join(entries, "\n")
+	default:
+		return fmt.Sprintf("unknown object %s", o.GetObjType())
+	}
 }
