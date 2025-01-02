@@ -7,5 +7,5 @@ gitのgo実装練習
 各種コマンド実装
 - [x] cat-file
 - [x] hash-object
-- [ ] update-index
+- [x] update-index
 - [ ] ls-files
