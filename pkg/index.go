@@ -220,6 +220,7 @@ func AddEntry(objects map[string]*GitObj) {
 	index := ReadIndexFile()
 
 	// truncate index file
+	// もとのindexより小さくなる場合、単に上書きしていくと後ろに余計なものが残るため
 	if err := os.Truncate(".git/index", 0); err != nil {
 		panic(err)
 	}
@@ -253,6 +254,7 @@ func AddEntry(objects map[string]*GitObj) {
 			ctimeNsec:  int64(fileinfo.ModTime().Nanosecond()),
 			mtimeNsec:  int64(fileinfo.ModTime().Nanosecond()),
 			objectName: obj.Hash(),
+			// わからないのでnameLength以外は一旦適当
 			flags:      flag{assumeValid: false, extended: false, stage: 0, nameLength: len(fileName)},
 			name:       fileName,
 		}
