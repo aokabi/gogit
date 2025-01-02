@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -266,7 +265,6 @@ func AddEntry(objects map[string]*GitObj) {
 	if _, err := f.Write(index.encodeBinary()); err != nil {
 		panic(err)
 	}
-	// fmt.Println(hex.Dump(index.encodeBinary()))
 
 }
 
@@ -278,7 +276,6 @@ func (index *index) encodeBinary() []byte {
 	encoded = binary.BigEndian.AppendUint32(encoded, uint32(index.version))
 	encoded = binary.BigEndian.AppendUint32(encoded, uint32(index.entryNum))
 
-	fmt.Println("entryNum:", len(index.entries))
 	for _, entry := range index.entries {
 		byteSum := 0
 		// ctimeSec

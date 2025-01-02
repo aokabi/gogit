@@ -64,7 +64,6 @@ func createObject(path string) *pkg.GitObj {
 		// print hash
 		obj := pkg.NewBlob(content)
 		hash := obj.Hash()
-		fmt.Println(hash)
 
 		// save object
 		if _, err := os.Stat(fmt.Sprintf(".git/objects/%s", hash[:2])); os.IsNotExist(err) {
