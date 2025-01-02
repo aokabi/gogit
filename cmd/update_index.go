@@ -25,8 +25,20 @@ to quickly create a Cobra application.`,
 
 		if addFlag {
 			fmt.Println("add flag is set")
-			index := pkg.ReadIndexFile()
-			fmt.Println(index)
+
+			if len(args) == 0 {
+				fmt.Println("no file name")
+				return
+			}
+
+			// create git object
+			nameObjectMap := make(map[string]*pkg.GitObj)
+			for _, arg := range args {
+				obj := createObject(arg)
+				nameObjectMap[arg] = obj
+			}
+
+			pkg.AddEntry(nameObjectMap)
 		}
 
 	},
