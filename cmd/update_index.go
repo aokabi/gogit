@@ -30,7 +30,7 @@ to quickly create a Cobra application.`,
 			// create git object
 			nameObjectMap := make(map[string]*pkg.GitObj)
 			for _, arg := range args {
-				obj := createObject(arg)
+				obj := createBlobObject(arg)
 				nameObjectMap[arg] = obj
 			}
 

@@ -4,7 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"compress/zlib"
 	"fmt"
 	"io"
 	"os"
@@ -29,7 +28,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		createObject(args[0])
+		createBlobObject(args[0])
 	},
 	DisableFlagsInUseLine: true,
 }
@@ -49,36 +48,21 @@ func init() {
 	hashObjectCmd.Flags().BoolP("w", "w", false, "write database")
 }
 
-func createObject(path string) *pkg.GitObj {
-		f, err := os.Open(path)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
+func createBlobObject(path string) *pkg.GitObj {
+	f, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
 
-		content, err := io.ReadAll(f)
-		if err != nil {
-			panic(err)
-		}
+	content, err := io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
 
-		// print hash
-		obj := pkg.NewBlob(content)
-		hash := obj.Hash()
+	obj := pkg.NewBlob(content)
 
-		// save object
-		if _, err := os.Stat(fmt.Sprintf(".git/objects/%s", hash[:2])); os.IsNotExist(err) {
-			os.Mkdir(fmt.Sprintf(".git/objects/%s", hash[:2]), 0755)	
-		}
-		wf, err := os.Create(fmt.Sprintf(".git/objects/%s/%s", hash[:2], hash[2:]))
-		if err != nil {
-			panic(err)
-		}
-		defer wf.Close()
-		
-		zipWriter := zlib.NewWriter(wf)
-		defer zipWriter.Close()
+	obj.Store()
 
-		obj.Store(zipWriter)
-
-		return obj
+	return obj
 }
