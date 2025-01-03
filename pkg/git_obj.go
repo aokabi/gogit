@@ -1,10 +1,12 @@
 package pkg
 
 import (
+	"compress/zlib"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -14,8 +16,17 @@ const (
 	HashSize = 20
 )
 
+type objectType string
+
+const (
+	BLOB objectType = "blob"
+	TREE objectType = "tree"
+	COMMIT objectType = "commit"
+)
+
+
 type header struct {
-	objType string
+	objType objectType
 	size    int
 }
 
@@ -24,7 +35,17 @@ type GitObj struct {
 	content []byte
 }
 
-func (o *GitObj) GetObjType() string {
+func NewGitObj(objType objectType, content []byte) *GitObj {
+	return &GitObj{
+		header: header{
+			objType: objType,
+			size:    len(content),
+		},
+		content: content,
+	}
+}
+
+func (o *GitObj) GetObjType() objectType {
 	return o.objType
 }
 
@@ -48,7 +69,7 @@ func Parse(r io.Reader) (*GitObj, error) {
 
 	return &GitObj{
 		header: header{
-			objType: objType,
+			objType: objectType(objType),
 			size:    sizeInt,
 		},
 		content: []byte(content),
@@ -63,7 +84,23 @@ func (o *GitObj) Hash() string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func (o *GitObj) Store(w io.Writer) {
+func (o *GitObj) Store() {
+	hash := o.Hash()
+
+	// save object
+	if _, err := os.Stat(fmt.Sprintf(".git/objects/%s", hash[:2])); os.IsNotExist(err) {
+		os.Mkdir(fmt.Sprintf(".git/objects/%s", hash[:2]), 0755)
+	}
+	wf, err := os.Create(fmt.Sprintf(".git/objects/%s/%s", hash[:2], hash[2:]))
+	if err != nil {
+		panic(err)
+	}
+	defer wf.Close()
+
+	zipWriter := zlib.NewWriter(wf)
+	defer zipWriter.Close()
+
 	store := fmt.Sprintf("%s %d\x00%s", o.objType, o.size, o.content)
-	w.Write([]byte(store))
+	zipWriter.Write([]byte(store))
+
 }

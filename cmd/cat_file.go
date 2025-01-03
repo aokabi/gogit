@@ -60,10 +60,10 @@ func init() {
 
 func printString(o *pkg.GitObj) string {
 	switch o.GetObjType() {
-	case "blob":
+	case pkg.BLOB:
 		return o.DecodeContent2Blob()
-	case "tree":
-		tree := pkg.DecodeContent2Tree(o)
+	case pkg.TREE:
+		tree := pkg.DecodeTree(o)
 		entries := make([]string, 0)
 		for e := range tree.Entries() {
 			entries = append(entries, fmt.Sprintf("%s %s %s    %s", e.GetPerm(), e.GetObjType(), e.GetHash(), e.GetFilename()))
