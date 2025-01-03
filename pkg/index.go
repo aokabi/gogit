@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
+	"iter"
 	"os"
 	"syscall"
 	"time"
@@ -66,6 +68,28 @@ type index struct {
 	indexHeader
 	entries   []indexEntry
 	extension extension
+}
+
+func (i *index) Entries() iter.Seq[indexEntry] {
+	return func(yield func(indexEntry) bool) {
+		for _, e := range i.entries {
+			if !yield(e) {
+				return
+			}
+		}
+	}
+}
+
+func (e *indexEntry) GetPerm() string {
+	return fmt.Sprintf("%o", e.mode)
+}
+
+func (e *indexEntry) GetFilename() string {
+	return e.name
+}
+
+func (e *indexEntry) GetHash() string {
+	return e.objectName
 }
 
 func ReadIndexFile() *index {
@@ -255,8 +279,8 @@ func AddEntry(objects map[string]*GitObj) {
 			mtimeNsec:  int64(fileinfo.ModTime().Nanosecond()),
 			objectName: obj.Hash(),
 			// わからないのでnameLength以外は一旦適当
-			flags:      flag{assumeValid: false, extended: false, stage: 0, nameLength: len(fileName)},
-			name:       fileName,
+			flags: flag{assumeValid: false, extended: false, stage: 0, nameLength: len(fileName)},
+			name:  fileName,
 		}
 
 		index.entries = append(index.entries, newEntry)

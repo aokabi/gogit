@@ -60,7 +60,7 @@ func createBlobObject(path string) *pkg.GitObj {
 		panic(err)
 	}
 
-	obj := pkg.NewBlob(content)
+	obj := pkg.NewGitObj(pkg.BLOB, content)
 
 	obj.Store()
 

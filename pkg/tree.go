@@ -13,12 +13,35 @@ type tree struct {
 
 type treeEntry struct {
 	perm     string
-	objType  string
+	objType  objectType
 	hash     string
 	filename string
 }
 
-func DecodeContent2Tree(o *GitObj) *tree {
+func NewTree() *tree {
+	return &tree{
+		entries: make([]treeEntry, 0),
+	}
+}
+
+func (t *tree) AddEntry(perm string, objType objectType, hash string, filename string) {
+	t.entries = append(t.entries, treeEntry{perm: perm, objType: objType, hash: hash, filename: filename})
+}
+
+func (t *tree) EncodeTree() *GitObj {
+	contents := make([]byte, 0)
+	for e := range t.Entries() {
+		tmp := fmt.Sprintf("%s %s\x00", e.GetPerm(), e.GetFilename())
+		decodeHash, err := hex.DecodeString(e.GetHash())
+		if err != nil {
+			panic(err)
+		}
+		contents = append(contents, append([]byte(tmp), decodeHash...)...)
+	}
+	return NewGitObj(TREE, contents)
+}
+
+func DecodeTree(o *GitObj) *tree {
 	if o.objType != "tree" {
 		panic(fmt.Sprintf("not tree: %s", o.objType))
 	}
@@ -40,7 +63,7 @@ func DecodeContent2Tree(o *GitObj) *tree {
 		}
 		defer r.Close()
 
-		o, err := Parse(r)
+		entryObj, err := Parse(r)
 		if err != nil {
 			panic(err)
 		}
@@ -50,7 +73,7 @@ func DecodeContent2Tree(o *GitObj) *tree {
 
 		entries = append(entries, treeEntry{
 			perm:     perm,
-			objType:  o.objType,
+			objType:  objectType(entryObj.objType),
 			hash:     hash,
 			filename: filename,
 		})
@@ -75,7 +98,7 @@ func (e treeEntry) GetPerm() string {
 	return e.perm
 }
 
-func (e treeEntry) GetObjType() string {
+func (e treeEntry) GetObjType() objectType {
 	return e.objType
 }
 

@@ -16,8 +16,17 @@ const (
 	HashSize = 20
 )
 
+type objectType string
+
+const (
+	BLOB objectType = "blob"
+	TREE objectType = "tree"
+	COMMIT objectType = "commit"
+)
+
+
 type header struct {
-	objType string
+	objType objectType
 	size    int
 }
 
@@ -26,7 +35,17 @@ type GitObj struct {
 	content []byte
 }
 
-func (o *GitObj) GetObjType() string {
+func NewGitObj(objType objectType, content []byte) *GitObj {
+	return &GitObj{
+		header: header{
+			objType: objType,
+			size:    len(content),
+		},
+		content: content,
+	}
+}
+
+func (o *GitObj) GetObjType() objectType {
 	return o.objType
 }
 
@@ -50,7 +69,7 @@ func Parse(r io.Reader) (*GitObj, error) {
 
 	return &GitObj{
 		header: header{
-			objType: objType,
+			objType: objectType(objType),
 			size:    sizeInt,
 		},
 		content: []byte(content),
