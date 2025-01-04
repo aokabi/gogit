@@ -10,6 +10,7 @@ import (
 // commit objectのフォーマット
 /*
 tree {hash}
+[parent {hash}]
 author {name} <{email}> {timestamp} {timezone}
 committer {name} <{email}> {timestamp} {timezone}
 
@@ -18,6 +19,7 @@ committer {name} <{email}> {timestamp} {timezone}
 
 type commit struct {
 	treeHash           string
+	parent             string
 	author             string
 	authorEmail        string
 	authorTimestamp    time.Time
@@ -27,9 +29,10 @@ type commit struct {
 	message            string
 }
 
-func NewCommit(treeHash string, author string, authorEmail string, authorTimestamp time.Time, committer string, committerEmail string, committerTimestamp time.Time, message string) *commit {
+func NewCommit(treeHash string, parent string, author string, authorEmail string, authorTimestamp time.Time, committer string, committerEmail string, committerTimestamp time.Time, message string) *commit {
 	return &commit{
 		treeHash:           treeHash,
+		parent:             parent,
 		author:             author,
 		authorEmail:        authorEmail,
 		authorTimestamp:    authorTimestamp,
@@ -44,6 +47,10 @@ func (c *commit) EncodeCommit() *GitObj {
 	contents := make([]string, 0)
 
 	contents = append(contents, fmt.Sprintf("tree %s\n", c.treeHash))
+
+	if c.parent != "" {
+		contents = append(contents, fmt.Sprintf("parent %s\n", c.parent))
+	}
 
 	contents = append(contents, fmt.Sprintf("author %s <%s> %d %s\n", c.author, c.authorEmail, c.authorTimestamp.Unix(), offsetStr(c.authorTimestamp)))
 
@@ -60,21 +67,40 @@ func DecodeCommit(o *GitObj) *commit {
 		panic(fmt.Sprintf("not commit: %s", o.objType))
 	}
 
-	lines := strings.Split(string(o.content), "\n")
-	treeHash := strings.Split(lines[0], " ")[1]
-	authorLine := strings.Split(lines[1], " ")
-	committerLine := strings.Split(lines[2], " ")
-	messageLine := strings.Join(lines[3:], "\n")
+	tmp := strings.Split(string(o.content), "\n\n")
+	headers := strings.Split(tmp[0], "\n")
+	message := tmp[1]
+
+	var treeHash string
+	var parent string
+	var authorLine []string
+	var committerLine []string
+
+	for _, h := range headers {
+		prefix := strings.Split(h, " ")[0]
+		switch prefix {
+		case "tree":
+			treeHash = strings.Split(h, " ")[1]	
+		case "parent":
+			parent = strings.Split(h, " ")[1]
+		case "author":
+			authorLine = strings.Split(h, " ")
+		case "committer":
+			committerLine = strings.Split(h, " ")
+		
+		}
+	}
 
 	return &commit{
 		treeHash:           treeHash,
+		parent:             parent,
 		author:             authorLine[1],
 		authorEmail:        authorLine[2],
 		authorTimestamp:    parseTimestamp(authorLine[3], authorLine[4]),
 		committer:          committerLine[1],
 		committerEmail:     committerLine[2],
 		committerTimestamp: parseTimestamp(committerLine[3], committerLine[4]),
-		message:            messageLine,
+		message:            message,
 	}
 }
 

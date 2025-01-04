@@ -27,13 +27,14 @@ to quickly create a Cobra application.`,
 		now := time.Now()
 		commit := pkg.NewCommit(
 			args[0],
+			parentFlag,
 			conf.GetName(),
 			conf.GetEmail(),
 			now,
 			conf.GetName(),
 			conf.GetEmail(),
 			now,
-			commitFlag,
+			messageFlag,
 		)
 
 		obj := commit.EncodeCommit()
@@ -45,7 +46,8 @@ to quickly create a Cobra application.`,
 }
 
 var (
-	commitFlag string
+	messageFlag string
+	parentFlag string
 )
 
 func init() {
@@ -60,5 +62,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// commitTreeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	commitTreeCmd.Flags().StringVarP(&commitFlag, "m", "m", "", "commit message")
+	commitTreeCmd.Flags().StringVarP(&messageFlag, "m", "m", "", "commit message")
+	commitTreeCmd.Flags().StringVarP(&parentFlag, "p", "p", "", "parent hash")
 }
