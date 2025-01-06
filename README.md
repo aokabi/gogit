@@ -11,4 +11,4 @@ gitのgo実装練習
 - [x] write-tree
 - [ ] ls-files
 - [x] commit-tree
-- [ ] update-ref
+- [x] update-ref
