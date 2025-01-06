@@ -10,5 +10,5 @@ gitのgo実装練習
 - [x] update-index
 - [x] write-tree
 - [ ] ls-files
-- [ ] commit-tree
+- [x] commit-tree
 - [ ] update-ref
