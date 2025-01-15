@@ -15,5 +15,5 @@ gitのgo実装練習
 
 Porcelainコマンド実装
 - [x] add
-- [ ] commit
+- [x] commit
 - [ ] push
