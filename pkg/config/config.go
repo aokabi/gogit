@@ -10,20 +10,53 @@ import (
 
 type user struct {
 	email string
-	name string
+	name  string
+}
+
+type remote struct {
+	url string
 }
 
 type config struct {
 	user
+	remotes map[string]remote
+}
+
+func new() *config {
+	return &config{
+		remotes: map[string]remote{},
+	}
 }
 
 func Read() *config {
-	return readGlobal()
+	globalConf := readGlobal()
+	localConf := readLocal()
+
+	// 本当は適用の優先順とか考慮する
+	return &config{
+		user:    globalConf.user,
+		remotes: localConf.remotes,
+	}
 }
 
 func readGlobal() *config {
 	homedir := os.Getenv("HOME")
 	f, err := os.Open(filepath.Join(homedir, ".gitconfig"))
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	return decode(f)
+}
+
+func readLocal() *config {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	f, err := os.Open(filepath.Join(currentDir, ".git/config"))
 	if err != nil {
 		panic(err)
 	}
@@ -38,6 +71,10 @@ func (c *config) GetEmail() string {
 
 func (c *config) GetName() string {
 	return c.user.name
+}
+
+func (c *config) GetRemoteUrl(repo string) string {
+	return c.remotes[repo].url
 }
 
 /*
@@ -60,6 +97,9 @@ https://git-scm.com/docs/git-config#_configuration_file
 
 	email = aokabit@gmail.com
 	name = aokabi
+
+[remote "origin"]
+	url = https://github.com/aokabi/gogit
 */
 func decode(r io.Reader) *config {
 	conf, err := io.ReadAll(r)
@@ -67,18 +107,24 @@ func decode(r io.Reader) *config {
 		panic(err)
 	}
 
-	sectionRegex := regexp.MustCompile(`^\[(.+)]$`)
+	// (?:...) 非キャプチャグループ
+	sectionRegex := regexp.MustCompile(`^\[([^\s"\]]+)(?:\s+"([^"]+)")?\]$`)
 	keyValueRegex := regexp.MustCompile(`^(\w+)\s*=\s*(.+)$`)
 
 	lines := strings.Split(string(conf), "\n")
-	c := &config{}
-	var currentSection string
+	c := new()
+	var currentSection, currentSubSection string
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
 		// start section
 		if matches := sectionRegex.FindStringSubmatch(line); matches != nil {
 			currentSection = matches[1]
+			if len(matches) > 2 {
+				currentSubSection = matches[2]
+			} else {
+				currentSubSection = ""
+			}
 			continue
 		}
 
@@ -90,6 +136,23 @@ func decode(r io.Reader) *config {
 					c.user.email = matches[2]
 				case "name":
 					c.user.name = matches[2]
+				}
+			}
+		case "remote":
+			if currentSubSection != "" {
+				if matches := keyValueRegex.FindStringSubmatch(line); matches != nil {
+					// 初期化
+					if  _, ok := c.remotes[currentSubSection]; !ok {
+						c.remotes[currentSubSection] = remote{}
+					}
+					remote := c.remotes[currentSubSection]
+					
+					switch matches[1] {
+					case "url":
+						remote.url = matches[2]
+					}
+
+					c.remotes[currentSubSection] = remote
 				}
 			}
 		}
