@@ -67,7 +67,18 @@ type extension struct {
 type index struct {
 	indexHeader
 	entries   []indexEntry
-	extension extension
+	extension *extension
+}
+
+func NewIndex() *index {
+	return &index{
+		indexHeader: indexHeader{
+			signature: "DIRC",
+			version:   2,
+			entryNum:  0,
+		},
+		entries: make([]indexEntry, 0),
+	}
 }
 
 func (i *index) Entries() iter.Seq[indexEntry] {
@@ -92,10 +103,10 @@ func (e *indexEntry) GetHash() string {
 	return e.objectName
 }
 
-func ReadIndexFile() *index {
+func ReadIndexFile() (*index, error) {
 	f, err := Open("index")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer f.Close()
 
@@ -215,42 +226,46 @@ func ReadIndexFile() *index {
 	signature := make([]byte, 4)
 	_, err = f.Read(signature)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	size := make([]byte, 4)
 	_, err = f.Read(size)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	sizeInt := binary.BigEndian.Uint32(size)
 
 	data := make([]byte, sizeInt)
 	_, err = f.Read(data)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	index.extension = extension{
+	index.extension = &extension{
 		signature: string(signature),
 		size:      sizeInt,
 		data:      data,
 	}
 
-	return index
+	return index, nil
 }
 
 func AddEntry(objects map[string]*GitObj) {
 	// 一番最初のindexファイルがない状態だと失敗するので修正したい
-	index := ReadIndexFile()
-
-	// truncate index file
-	// もとのindexより小さくなる場合、単に上書きしていくと後ろに余計なものが残るため
-	if err := Truncate("index", 0); err != nil {
-		panic(err)
+	index, err := ReadIndexFile()
+	if err != nil {
+		if !os.IsNotExist(err) {
+			// indexファイルが存在しない場合以外はエラー
+			panic(err)
+		} else {
+			// 初回のaddのとき
+			index = NewIndex()
+		}
 	}
 
-	f, err := OpenFile("index", os.O_CREATE|os.O_WRONLY, 0644)
+	// truncateしているのは、もとのindexより小さくなる場合、単に上書きしていくと後ろに余計なものが残るため
+	f, err := OpenFile("index", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -351,7 +366,9 @@ func (index *index) encodeBinary() []byte {
 	}
 
 	// extensions
-	encoded = append(encoded, index.extension.encodeBinary()...)
+	if index.extension != nil {
+		encoded = append(encoded, index.extension.encodeBinary()...)
+	}
 
 	// hash checksum of the index file
 	hash := sha1.New()

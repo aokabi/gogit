@@ -24,7 +24,11 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// read index
-		index := pkg.ReadIndexFile()
+		index, err := pkg.ReadIndexFile()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		tree := pkg.NewTree()
 
 		// indexのエントリをtreeのエントリに追加
