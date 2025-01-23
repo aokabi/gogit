@@ -2,14 +2,11 @@ package pkg
 
 import (
 	"io"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
 func UpdateRefs(ref string, newValue string) {
-	filename := filepath.Join(".git/", ref)
-	f, err := os.Create(filename)
+	f, err := CreateFile(ref)
 	if err != nil {
 		panic(err)
 	}
@@ -21,7 +18,7 @@ func UpdateRefs(ref string, newValue string) {
 }
 
 func ReadHEAD() string {
-	f, err := os.Open(".git/HEAD")
+	f, err := Open("HEAD")
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +34,7 @@ func ReadHEAD() string {
 }
 
 func ReadRef(ref string) string {
-	f, err := os.Open(filepath.Join(".git/", ref))
+	f, err := Open(ref)
 	if err != nil {
 		panic(err)
 	}

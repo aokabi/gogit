@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -19,11 +18,10 @@ const (
 type objectType string
 
 const (
-	BLOB objectType = "blob"
-	TREE objectType = "tree"
+	BLOB   objectType = "blob"
+	TREE   objectType = "tree"
 	COMMIT objectType = "commit"
 )
-
 
 type header struct {
 	objType objectType
@@ -88,10 +86,13 @@ func (o *GitObj) Store() {
 	hash := o.Hash()
 
 	// save object
-	if _, err := os.Stat(fmt.Sprintf(".git/objects/%s", hash[:2])); os.IsNotExist(err) {
-		os.Mkdir(fmt.Sprintf(".git/objects/%s", hash[:2]), 0755)
+	dir := fmt.Sprintf("objects/%s", hash[:2])
+	if IsNotExist(dir) {
+		if err := CreateDir(dir); err != nil {
+			panic(err)
+		}
 	}
-	wf, err := os.Create(fmt.Sprintf(".git/objects/%s/%s", hash[:2], hash[2:]))
+	wf, err := CreateFile(fmt.Sprintf("objects/%s/%s", hash[:2], hash[2:]))
 	if err != nil {
 		panic(err)
 	}

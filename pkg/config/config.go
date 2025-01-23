@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/aokabi/gogit/pkg"
 )
 
 type user struct {
@@ -51,12 +53,7 @@ func readGlobal() *config {
 }
 
 func readLocal() *config {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	f, err := os.Open(filepath.Join(currentDir, ".git/config"))
+	f, err := pkg.Open("config")
 	if err != nil {
 		panic(err)
 	}
@@ -99,6 +96,7 @@ https://git-scm.com/docs/git-config#_configuration_file
 	name = aokabi
 
 [remote "origin"]
+
 	url = https://github.com/aokabi/gogit
 */
 func decode(r io.Reader) *config {
@@ -142,11 +140,11 @@ func decode(r io.Reader) *config {
 			if currentSubSection != "" {
 				if matches := keyValueRegex.FindStringSubmatch(line); matches != nil {
 					// 初期化
-					if  _, ok := c.remotes[currentSubSection]; !ok {
+					if _, ok := c.remotes[currentSubSection]; !ok {
 						c.remotes[currentSubSection] = remote{}
 					}
 					remote := c.remotes[currentSubSection]
-					
+
 					switch matches[1] {
 					case "url":
 						remote.url = matches[2]

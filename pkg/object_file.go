@@ -4,10 +4,11 @@ import (
 	"compress/zlib"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 func ReadObjectFile(hash string) *os.File {
-	f, err := os.Open(".git/objects/" + hash[:2] + "/" + hash[2:])
+	f, err := Open(filepath.Join("objects", hash[:2], hash[2:]))
 	if err != nil {
 		panic(err)
 	}
