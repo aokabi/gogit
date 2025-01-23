@@ -41,7 +41,11 @@ func init() {
 
 func createTreeObject() {
 	// read index
-	index := pkg.ReadIndexFile()
+	index, err := pkg.ReadIndexFile()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	tree := pkg.NewTree()
 
 	// indexのエントリをtreeのエントリに追加
