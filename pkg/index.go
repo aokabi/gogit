@@ -93,7 +93,7 @@ func (e *indexEntry) GetHash() string {
 }
 
 func ReadIndexFile() *index {
-	f, err := os.Open(".git/index")
+	f, err := Open("index")
 	if err != nil {
 		panic(err)
 	}
@@ -241,15 +241,16 @@ func ReadIndexFile() *index {
 }
 
 func AddEntry(objects map[string]*GitObj) {
+	// 一番最初のindexファイルがない状態だと失敗するので修正したい
 	index := ReadIndexFile()
 
 	// truncate index file
 	// もとのindexより小さくなる場合、単に上書きしていくと後ろに余計なものが残るため
-	if err := os.Truncate(".git/index", 0); err != nil {
+	if err := Truncate("index", 0); err != nil {
 		panic(err)
 	}
 
-	f, err := os.OpenFile(".git/index", os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := OpenFile("index", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
