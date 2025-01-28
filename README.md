@@ -12,8 +12,10 @@ gitのgo実装練習
 - [ ] ls-files
 - [x] commit-tree
 - [x] update-ref
+- [ ] pack-objects
 
 Porcelainコマンド実装
 - [x] add
 - [x] commit
 - [x] push
+- [ ] merge
